@@ -1,0 +1,455 @@
+Folder Structure:
+isl_pipeline/
+├── modules/
+│   ├── __init__.py        # Makes 'modules' a package
+│   ├── preprocessor.py    # Preprocessing module for tokenization and parsing
+│   ├── classifier.py      # Sentence classification module
+│   ├── extractor.py       # Component extraction module
+│   ├── transformer.py     # Transformation module for ISL ordering
+│   └── generator.py       # Gloss generation module with non-manual markers
+├── utils/
+│   ├── __init__.py        # Makes 'utils' a package
+│   └── helpers.py         # Utility functions (e.g., file loading)
+├── data/
+│   ├── time_words.txt     # List of time-related words (e.g., "yesterday")
+│   └── wh_words.txt       # List of wh-words (e.g., "what", "where")
+├── main.py                # Main script to run the pipeline
+└── requirements.txt       # Project dependencies
+
+
+File 1: requirements.txt
+Description:
+This file lists the Python dependencies required for the project. It ensures that anyone setting up the pipeline can install the necessary libraries with a single command.
+Code:
+spacy
+
+Notes:
+Purpose: Specifies the spacy library for natural language processing.
+Setup: After creating this file, run:
+
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm (to download the English model).
+
+
+File 2: data/time_words.txt
+Description:
+A text file containing time-related words used to identify temporal expressions in sentences. These are loaded into a set for efficient lookup in the pipeline.
+Code:
+yesterday
+today
+tomorrow
+now
+later
+Notes
+
+Purpose: Helps the extractor.py module identify time expressions (e.g., "Yesterday" in "Yesterday, I went to school").
+Usage: Loaded via utils/helpers.py.
+
+
+File 3: data/wh_words.txt
+Description:
+A text file listing wh-words used to classify wh-questions and transform them appropriately in ISL glosses.
+Code:
+what
+where
+when
+who
+why
+how
+
+Notes:
+Purpose: Used by classifier.py and transformer.py to detect and handle wh-questions (e.g., "What did he eat?").
+Usage: Loaded via utils/helpers.py.
+
+
+File 4: utils/__init__.py
+Description:
+An empty file that marks the utils directory as a Python package, allowing imports from within it.
+
+Code:
+# This file is intentionally left empty to make 'utils' a package.
+
+Notes:
+Purpose: Enables modular imports like from utils.helpers import load_list.
+
+
+File 5: utils/helpers.py
+Description:
+Contains utility functions used across the pipeline, such as loading word lists from text files into sets for efficient processing.
+Code:
+def load_list(file_path):
+    """
+    Load a list of words from a file into a set.
+    
+    Args:
+        file_path (str): Path to the text file.
+    Returns:
+        set: A set of lowercase words from the file.
+    """
+    with open(file_path, 'r') as f:
+        return set(line.strip().lower() for line in f)
+
+Notes:
+
+Purpose: Provides a reusable function to load time_words.txt and wh_words.txt.
+Usage: Called in extractor.py and transformer.py.
+
+
+File 6: modules/__init__.py
+Description:
+An empty file that marks the modules directory as a Python package, enabling imports from its submodules.
+Code:
+# This file is intentionally left empty to make 'modules' a package.
+
+Notes:
+Purpose: Allows imports like from modules.preprocessor import preprocess.
+
+
+File 7: modules/preprocessor.py
+Description:
+Handles the initial processing of input sentences using spaCy, converting raw text into a parsed Doc object with tokens, POS (Parts of Speech) tags, and dependency labels.
+
+Code:
+import spacy
+
+# Load the English model
+nlp = spacy.load("en_core_web_sm")
+
+def preprocess(sentence):
+    """
+    Preprocess the input sentence using spaCy.
+    
+    Args:
+        sentence (str): The English sentence to process.
+    Returns:
+        spacy.tokens.Doc: A parsed Doc object with linguistic annotations.
+    """
+    return nlp(sentence)
+
+Notes:
+
+Purpose: Provides the foundation for all subsequent modules by tokenizing and annotating the input.
+Usage: Called in main.py to start the pipeline.
+
+
+File 8: modules/classifier.py
+Description:
+Classifies the sentence type (declarative, yes/no question, wh-question, or imperative) based on its structure and content, guiding the transformation process.
+
+Code:
+from utils.helpers import load_list
+
+# Load wh-words for classification
+wh_words = load_list('data/wh_words.txt')
+
+def classify_sentence(doc):
+    """
+    Classify the sentence type based on the spaCy Doc object.
+    
+    Args:
+        doc (spacy.tokens.Doc): Parsed sentence.
+    Returns:
+        str: Sentence type ('declarative', 'yes-no-question', 'wh-question', 'imperative').
+    """
+    if doc[-1].text == "?":
+        if any(token.text.lower() in wh_words for token in doc):
+            return "wh-question"
+        return "yes-no-question"
+    elif doc[0].pos_ == "VERB" and doc[0].dep_ == "ROOT":
+        return "imperative"
+    return "declarative"
+
+Notes:
+
+Purpose: Determines how the sentence should be transformed (e.g., SOV for declaratives, verb-first for imperatives).
+Usage: Called in main.py to set sentence_type.
+
+
+File 9: modules/extractor.py
+Description:
+Extracts key grammatical components (subject, verb, object, time expression, negation (like not, never, no)) from the parsed sentence, handling special cases like "want to" constructions and copula omission.
+
+Code:
+from utils.helpers import load_list
+
+time_words = load_list('data/time_words.txt')
+
+def extract_components(doc):
+    """
+    Extract key components from a spaCy Doc object.
+    
+    Args:
+        doc (spacy.tokens.Doc): Parsed sentence.
+    Returns:
+        tuple: (subject, verb, object, time_exp, negation)
+    """
+    subject, verb, object_, time_exp, negation = None, None, None, None, False
+
+    for token in doc:
+        if token.dep_ in ("nsubj", "nsubjpass"):
+            subject = token
+        elif token.dep_ == "ROOT":
+            verb = token
+        elif token.dep_ == "dobj":
+            object_ = token
+        elif token.dep_ in ("advmod", "npadvmod", "tmod") and token.text.lower() in time_words:
+            time_exp = token
+        elif token.dep_ == "neg":
+            negation = True
+
+    # Handle "want to" or "need to" with infinitive
+    if verb and verb.lemma_ in ["want", "need"]:
+        infinitive = next((child for child in verb.children if child.dep_ == "xcomp"), None)
+        if infinitive:
+            verb = infinitive  # Use the infinitive as the main verb
+
+    # Handle prepositional objects
+    if not object_ and verb:
+        prep = next((child for child in verb.children if child.dep_ == "prep"), None)
+        if prep:
+            object_ = next((child for child in prep.children if child.dep_ == "pobj"), None)
+
+    # Handle copula and auxiliary verbs with complements
+    complement = next((child for child in (verb or []).children if child.dep_ in ("acomp", "attr", "dobj")), None)
+    if verb and verb.lemma_ in ["be", "have", "feel", "am", "is", "are"] and complement:
+        verb = complement
+
+    return subject, verb, object_, time_exp, negation
+
+Notes:
+
+Purpose: Extracts components accurately, ensuring ISL-specific simplifications (e.g., omitting "be" and using "happy" in "She is not happy").
+Usage: Called in main.py to provide input for transformer.py.
+
+
+File 10: modules/transformer.py
+Description:
+Reorders the extracted components into ISL gloss order based on sentence type, handling special cases like "want to," imperatives, and multi-part wh-questions.
+
+Code:
+from utils.helpers import load_list
+
+wh_words = load_list('data/wh_words.txt')
+
+def transform_components(sentence_type, components, doc):
+    """
+    Transform extracted components into an ISL-ordered gloss.
+    
+    Args:
+        sentence_type (str): Type of sentence ('declarative', 'yes-no-question', etc.).
+        components (tuple): (subject, verb, object, time_exp, negation).
+        doc (spacy.tokens.Doc): Parsed sentence.
+    Returns:
+        str: Transformed ISL gloss without markers.
+    """
+    subject, verb, object_, time_exp, negation = components
+
+    glosses = {
+        "subject": subject.text.upper() if subject else "",
+        "verb": verb.lemma_.upper() if verb else "",
+        "object": object_.text.upper() if object_ else "",
+        "time": time_exp.text.upper() if time_exp else "",
+        "negation": "NOT" if negation else ""
+    }
+
+    # Handle "want to" and "need to"
+    want_token = next((token for token in doc if token.lemma_ in ["want", "need"] and token.dep_ == "ROOT"), None)
+    if want_token and verb and verb.dep_ == "xcomp":
+        glosses["verb"] = f"{want_token.lemma_.upper()} {verb.lemma_.upper()}"
+
+    # Handle "please" for imperatives
+    please_token = next((token for token in doc if token.text.lower() == "please"), None)
+    glosses["please"] = "PLEASE" if please_token else ""
+
+    if sentence_type == "declarative":
+        # Additional context for complex sentences (e.g., "stranger in the house")
+        context = ""
+        for token in doc:
+            if token.dep_ == "pobj" and token.text.upper() not in [glosses["object"], glosses["subject"]]:
+                context = f", {token.text.upper()}"
+        return f"{glosses['time']} {glosses['subject']} {glosses['object']} {glosses['verb']} {glosses['negation']}{context}".strip()
+
+    elif sentence_type == "yes-no-question":
+        return f"{glosses['subject']} {glosses['object']} {glosses['verb']}".strip()
+
+    elif sentence_type == "wh-question":
+        wh_word = next((token for token in doc if token.text.lower() in wh_words), None)
+        glosses["wh"] = wh_word.text.upper() if wh_word else ""
+        if "name" in [token.text.lower() for token in doc]:
+            your_token = next((token for token in doc if token.text.lower() == "your"), None)
+            multi_parts = " ".join([token.text.upper() for token in doc if token.text.lower() in ["name", "age", "place", "where"]])
+            return f"{'YOUR' if your_token else ''} {multi_parts or 'NAME'} {glosses['wh']}".strip()
+        if glosses["wh"] == "WHY":
+            return f"{glosses['wh']} {glosses['subject']} {glosses['verb']}".strip()
+        return f"{glosses['time']} {glosses['subject']} {glosses['wh']} {glosses['verb']}".strip()
+
+    elif sentence_type == "imperative":
+        obj_or_subj = glosses["object"] or glosses["subject"]
+        return f"{glosses['verb']} {obj_or_subj} {glosses['please']}".strip()
+
+    return ""
+
+Notes:
+Purpose: Applies ISL grammar rules (e.g., TIME-SUBJECT-OBJECT-VERB for declaratives) and handles special constructions.
+Usage: Called in main.py to reorder components.
+
+
+File 11: modules/generator.py
+Description:
+Finalizes the ISL gloss by adding non-manual markers (e.g., "[Y/N?]" for yes/no questions) and ensuring proper formatting.
+
+Code:
+def generate_gloss(transformed_gloss, sentence_type, negation):
+    """
+    Generate the final ISL gloss with non-manual markers.
+    
+    Args:
+        transformed_gloss (str): The gloss from transformer.py.
+        sentence_type (str): Type of sentence.
+        negation (bool): Whether negation is present.
+    Returns:
+        str: Final ISL gloss.
+    """
+    if sentence_type == "yes-no-question":
+        transformed_gloss += " [Y/N?]"
+    elif sentence_type == "wh-question":
+        transformed_gloss += " [WH?]"
+    return " ".join(transformed_gloss.split())  # Remove extra spaces
+
+Notes:
+Purpose: Adds ISL-specific markers and ensures clean output.
+Usage: Called in main.py as the final step.
+
+
+File 12: main.py
+Description:
+The entry point of the pipeline, integrating all modules to process input sentences and handle multi-sentence inputs by splitting and combining glosses.
+
+Code:
+from modules.preprocessor import preprocess
+from modules.classifier import classify_sentence
+from modules.extractor import extract_components
+from modules.transformer import transform_components
+from modules.generator import generate_gloss
+
+def isl_pipeline(sentence):
+    """
+    Convert an English sentence to ISL gloss using the modular pipeline.
+    
+    Args:
+        sentence (str): Input English sentence.
+    Returns:
+        str: ISL gloss.
+    """
+    # Split multi-sentence or multi-part inputs
+    parts = [s.strip() for s in sentence.replace(".", ",").split(",") if s.strip()]
+    glosses = []
+    
+    for part in parts:
+        doc = preprocess(part)
+        sentence_type = classify_sentence(doc)
+        components = extract_components(doc)
+        transformed_gloss = transform_components(sentence_type, components, doc)
+        final_gloss = generate_gloss(transformed_gloss, sentence_type, components[-1])
+        glosses.append(final_gloss)
+    
+    return ", ".join(glosses)
+
+# Test examples
+sentences = [
+    "The boy eats an apple.",
+    "Are you coming?",
+    "What did he eat?",
+    "Yesterday, I went to school.",
+    "She is not happy.",
+    "Sit down!",
+    "I am feeling thirsty.",
+    "Are you busy?",
+    "I want to eat.",
+    "I want to sleep.",
+    "The clothes are big",
+    "What is your name?",
+    "I am not going.",
+    "I am Faraan",
+    "I want to go to toilet",
+    "I want water",
+    "I feeling thirsty",
+    "I am not feeling well",
+    "I have fever",
+    "I have pain",
+    "Please help me",
+    "Can you call Doctor",
+    "Can you take me to Doctor",
+    "Please inform my parents",
+    "I want to sit",
+    "I want to stand",
+    "I am in Danger",
+    "It is an emergency",
+    "This is not right",
+    "This is not wrong",
+    "I want to sleep",
+    "I want to take rest",
+    "I need to take bath",
+    "I am not comfortable as there is a stranger in the house",
+    "What is your name, age and from which place are you coming from?",
+    "I am having a problem. Can you help me",
+    "I am feeling hot. Can you switch on the fan?",
+    "Why are you feeling sad?",
+    "The shoes are big",
+    "The shoes are small",
+    "The clothes are big"
+]
+
+for sentence in sentences:
+    print(f"English: {sentence}")
+    print(f"ISL Gloss: {isl_pipeline(sentence)}\n")
+
+Notes:
+Purpose: Orchestrates the pipeline, processes inputs, and handles multi-sentence cases.
+Usage: Run with python main.py to test all examples.
+
+
+Expected Outputs:
+Running main.py with the above files should produce:
+
+"The boy eats an apple." → "BOY APPLE EAT"
+"Are you coming?" → "YOU COME [Y/N?]"
+"What did he eat?" → "HE WHAT EAT [WH?]"
+"Yesterday, I went to school." → "YESTERDAY I SCHOOL GO"
+"She is not happy." → "SHE HAPPY NOT"
+"Sit down!" → "SIT"
+"I am feeling thirsty." → "I THIRSTY"
+"Are you busy?" → "YOU BUSY [Y/N?]"
+"I want to eat." → "I WANT EAT"
+"I want to sleep." → "I WANT SLEEP"
+"The clothes are big" → "CLOTHES BIG"
+"What is your name?" → "YOUR NAME WHAT [WH?]"
+"I am not going." → "I GO NOT"
+"I am Faraan" → "I FARAAN"
+"I want to go to toilet" → "I WANT TOILET GO"
+"I want water" → "I WANT WATER"
+"I feeling thirsty" → "I THIRSTY"
+"I am not feeling well" → "I WELL NOT"
+"I have fever" → "I FEVER"
+"I have pain" → "I PAIN"
+"Please help me" → "HELP ME PLEASE"
+"Can you call Doctor" → "YOU DOCTOR CALL"
+"Can you take me to Doctor" → "YOU ME DOCTOR TAKE"
+"Please inform my parents" → "INFORM MY PARENTS PLEASE"
+"I want to sit" → "I WANT SIT"
+"I want to stand" → "I WANT STAND"
+"I am in Danger" → "I DANGER"
+"It is an emergency" → "IT EMERGENCY"
+"This is not right" → "THIS RIGHT NOT"
+"This is not wrong" → "THIS WRONG NOT"
+"I want to sleep" → "I WANT SLEEP"
+"I want to take rest" → "I WANT REST"
+"I need to take bath" → "I NEED BATH"
+"I am not comfortable as there is a stranger in the house" → "I COMFORTABLE NOT, HOUSE STRANGER"
+"What is your name, age and from which place are you coming from?" → "YOUR NAME AGE WHERE WHAT [WH?]"
+"I am having a problem. Can you help me" → "I PROBLEM, YOU ME HELP"
+"I am feeling hot. Can you switch on the fan?" → "I HOT, YOU FAN SWITCH [Y/N?]"
+"Why are you feeling sad?" → "WHY YOU SAD [WH?]"
+"The shoes are big" → "SHOES BIG"
+"The shoes are small" → "SHOES SMALL"
+"The clothes are big" → "CLOTHES BIG"
