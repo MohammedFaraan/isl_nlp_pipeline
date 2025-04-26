@@ -59,7 +59,7 @@ def transform_components(sentence_type, components, doc):
                 base_gloss = f"{glosses['verb']}"
             else:
                 base_gloss = f"{glosses['time']} {glosses['subject']} {glosses['verb']}"
-            if negation:
+            if negation: 
                 base_gloss += " NOT"
         else:
             # Default: enforce SOV order: Subject, then Object (or destination), then Verb.
