@@ -1,8 +1,15 @@
 # modules/transformer.py
 
-from utils.helpers import load_list, finger_spell
+import spacy
+import os
+from text_to_gloss.utils.helpers import load_list, finger_spell
 
-wh_words = load_list('data/wh_words.txt')
+# Get the base directory where the module is located
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+data_dir = os.path.join(os.path.dirname(base_dir), "data")
+
+# Load wh-words from file
+wh_words = load_list(os.path.join(data_dir, 'wh_words.txt'))
 
 def transform_components(sentence_type, components, doc):
     subject, verb, original_verb, object_, prep_object, time_exp, negation, modal, complement, possessive = components
