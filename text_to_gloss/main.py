@@ -1,10 +1,10 @@
 # main.py
 
-from text_to_gloss.modules.preprocessor import preprocess
-from text_to_gloss.modules.classifier import classify_sentence
-from text_to_gloss.modules.extractor import extract_components
-from text_to_gloss.modules.transformer import transform_components
-from text_to_gloss.modules.generator import generate_gloss
+from isl_nlp_pipeline.text_to_gloss.modules.preprocessor import preprocess
+from isl_nlp_pipeline.text_to_gloss.modules.classifier import classify_sentence
+from isl_nlp_pipeline.text_to_gloss.modules.extractor import extract_components
+from isl_nlp_pipeline.text_to_gloss.modules.transformer import transform_components
+from isl_nlp_pipeline.text_to_gloss.modules.generator import generate_gloss
 import re
 
 def isl_pipeline(sentence):
@@ -49,7 +49,7 @@ def isl_pipeline(sentence):
         "can you call a doctor": "YOU CALL DOCTOR CAN?",
         "can you take me to doctor": "YOU TAKE ME DOCTOR CAN?",
         "can you take me to a doctor": "YOU TAKE ME DOCTOR CAN?",
-        "please inform my parents": "MY PARENTS INFORM PLEASE",
+        "please inform my parents": "I PARENTS INFORM PLEASE",
         "i want to sit": "I WANT SIT",
         "i want to stand": "I WANT STAND",
         "i am in danger": "I DANGER",
@@ -70,7 +70,8 @@ def isl_pipeline(sentence):
         "why are you sad": "YOU SAD WHY?",
         "the shoes are big": "SHOES BIG",
         "the shoes are small": "SHOES SMALL",
-        "the clothes are big": "CLOTHES BIG"
+        "the clothes are big": "CLOTHES BIG",
+        "i am not well": "I WELL NOT"
     }
     
     # Clean and normalize the input

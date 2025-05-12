@@ -2,7 +2,7 @@
 
 import spacy
 import os
-from text_to_gloss.utils.helpers import load_list, finger_spell
+from isl_nlp_pipeline.text_to_gloss.utils.helpers import load_list, finger_spell
 
 # Get the base directory where the module is located
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

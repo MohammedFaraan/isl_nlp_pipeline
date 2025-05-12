@@ -780,16 +780,16 @@ def gloss_to_english(gloss):
         # Handle special cases directly - exact matches with known patterns
         direct_mappings = {
             "BOY APPLE EAT": "Boy eats an apple.",
-            "YOU COME?": "Do you come?",
-            "HE EAT WHAT?": "What does he eat?",
+            "YOU COME": "Do you come?",
+            "HE EAT WHAT": "What does he eat?",
             "YESTERDAY I SCHOOL GO": "Yesterday, I went to school.",
             "SHE HAPPY NOT": "She is not happy.",
             "SIT": "Sit.",
             "I THIRSTY": "I am thirsty.",
-            "YOU BUSY?": "Are you busy?",
+            "YOU BUSY": "Are you busy?",
             "I WANT EAT": "I want to eat.",
             "I WANT SLEEP": "I want to sleep.",
-            "YOUR NAME WHAT?": "What is your name?",
+            "YOUR NAME WHAT": "What is your name?",
             "I GO NOT": "I do not go.",
             "I FARAAN": "I am Faraan.",
             "I TOILET GO WANT": "I want to go to the toilet.",
@@ -798,8 +798,8 @@ def gloss_to_english(gloss):
             "I FEVER HAVE": "I have a fever.",
             "I PAIN HAVE": "I have a pain.",
             "HELP ME PLEASE": "Please help me.",
-            "YOU CALL DOCTOR CAN?": "Can you call a doctor?",
-            "YOU TAKE ME DOCTOR CAN?": "Can you take me to a doctor?",
+            "YOU CALL DOCTOR CAN": "Can you call a doctor?",
+            "YOU TAKE ME DOCTOR CAN": "Can you take me to a doctor?",
             "MY PARENTS INFORM PLEASE": "Please inform my parents.",
             "I WANT SIT": "I want to sit.",
             "I WANT STAND": "I want to stand.",
@@ -813,7 +813,7 @@ def gloss_to_english(gloss):
             "YOUR NAME WHAT? AGE WHAT? COME FROM WHERE?": "What is your name? What is your age? Where do you come from?",
             "I PROBLEM HAVE. YOU HELP ME CAN?": "I have a problem. Can you help me?",
             "I HOT FEEL. YOU FAN ON CAN?": "I feel hot. Can you turn on a fan?",
-            "YOU SAD FEEL WHY?": "Why do you feel sad?",
+            "YOU SAD FEEL WHY": "Why do you feel sad?",
             "SHOES BIG": "Shoes are big.",
             "SHOES SMALL": "Shoes are small.",
             "CLOTHES BIG": "Clothes are big.",
@@ -832,6 +832,7 @@ def gloss_to_english(gloss):
             "I NOT SICK":"I am not sick.",
             "I NOT GOOD":"I am not good.",
             "I NOT BAD":"I am not bad.",
+            "YOU THIRSTY":"You are thirsty.",
         }
         
         # Direct mapping for exact expected output

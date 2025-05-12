@@ -42,4 +42,4 @@ for i, (input_text, expected) in enumerate(test_cases, 1):
     print(f"Got: {result}")
     print("-" * 50)
 
-print(f"\nResults: {passed} passed, {failed} failed out of {len(test_cases)} tests") 
+print(f"\nResults: {passed} passed, {failed} failed out of {len(test_cases)} tests")

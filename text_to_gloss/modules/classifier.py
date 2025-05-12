@@ -1,6 +1,6 @@
 import spacy
 import os
-from text_to_gloss.utils.helpers import load_list
+from isl_nlp_pipeline.text_to_gloss.utils.helpers import load_list
 
 # Load spaCy model
 nlp = spacy.load("en_core_web_sm")
