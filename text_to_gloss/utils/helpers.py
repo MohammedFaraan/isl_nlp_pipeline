@@ -7,4 +7,4 @@ def load_list(file_path):
 
 def finger_spell(word):
     """Convert a word to its finger-spelled form by separating each letter with a hyphen and converting to uppercase."""
-    return "-".join(word.upper())
+    return " ".join(word.upper())

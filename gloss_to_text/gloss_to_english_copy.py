@@ -101,6 +101,9 @@ def gloss_to_english(gloss):
             "I NOT GOOD":"I am not good.",
             "I NOT BAD":"I am not bad.",
             "YOU THIRSTY":"You are thirsty.",
+            "YOU WHAT WANT" : "What do you want?",
+            "YOU WHERE GO" : "Where do you go?",
+            "HELP I PLEASE": "Please help me"
         }
         
         # Additional mappings that were previously in refine_with_spacy function
@@ -149,6 +152,9 @@ def gloss_to_english(gloss):
             "I not sick":"I am not sick.",
             "I not good":"I am not good.",
             "I not bad":"I am not bad.",
+            "you are thirsty .": "You are thirsty.",
+            "what do you want ?": "What do you want?",  
+            "where do you go ?": "Where do you go?",
         }
         
         # Check if gloss exists in direct_mappings
